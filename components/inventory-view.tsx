@@ -3,12 +3,13 @@
 import { useState, useCallback, useEffect } from 'react'
 import useSWR from 'swr'
 import { Item, ItemInput, SortOption, SortDirection } from '@/lib/types'
-import { ItemCard } from './item-card'
+import { ItemCard, ViewMode } from './item-card'
 import { ItemForm } from './item-form'
 import { FilterBar } from './filter-bar'
 import { Button } from '@/components/ui/button'
-import { Plus, Package } from 'lucide-react'
+import { Plus, Package, LayoutGrid, List, ChefHat } from 'lucide-react'
 import { ThemeToggle } from './theme-toggle'
+import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import {
@@ -43,6 +44,7 @@ export function InventoryView() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [view, setView] = useState<ViewMode>('list')
 
   const debouncedSearch = useDebounce(search, 300)
 
@@ -123,7 +125,42 @@ export function InventoryView() {
               {items?.length ?? 0} items tracked
             </p>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            {/* AI Chef link */}
+            <Link href="/ai">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 px-3 text-xs font-medium"
+                aria-label="Open AI Chef"
+              >
+                <ChefHat className="h-3.5 w-3.5" />
+                AI Chef
+              </Button>
+            </Link>
+            {/* View toggle */}
+            <div className="flex items-center rounded-lg border border-border bg-muted p-0.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-7 w-7 rounded-md transition-colors ${view === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                onClick={() => setView('list')}
+                aria-label="List view"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-7 w-7 rounded-md transition-colors ${view === 'grid' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                onClick={() => setView('grid')}
+                aria-label="Grid view"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+            </div>
+            <ThemeToggle />
+          </div>
         </header>
 
         {/* Filters */}
@@ -139,20 +176,20 @@ export function InventoryView() {
         />
 
         {/* Item List */}
-        <div className="space-y-3 pt-2">
+        <div className={`pt-2 ${view === 'grid' ? 'grid grid-cols-2 gap-3' : 'space-y-3'}`}>
           {isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className={view === 'grid' ? 'aspect-square w-full rounded-xl' : 'h-24 w-full rounded-xl'} />
             ))
           ) : error ? (
-            <div className="py-12 text-center">
+            <div className="col-span-2 py-12 text-center">
               <p className="text-destructive">Failed to load items</p>
               <Button variant="outline" className="mt-4" onClick={() => mutate()}>
                 Try again
               </Button>
             </div>
           ) : items?.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="col-span-2 flex flex-col items-center justify-center py-16 text-center">
               <div className="mb-4 rounded-full bg-muted p-4">
                 <Package className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -176,6 +213,7 @@ export function InventoryView() {
                 item={item}
                 onEdit={handleEdit}
                 onDelete={(id) => setDeleteId(id)}
+                view={view}
               />
             ))
           )}

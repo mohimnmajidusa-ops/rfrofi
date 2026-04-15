@@ -8,10 +8,13 @@ import { Pencil, Trash2, Package } from 'lucide-react'
 import { format, differenceInDays, isPast, isToday } from 'date-fns'
 import Image from 'next/image'
 
+export type ViewMode = 'list' | 'grid'
+
 interface ItemCardProps {
   item: Item
   onEdit: (item: Item) => void
   onDelete: (id: string) => void
+  view?: ViewMode
 }
 
 function getExpirationStatus(expirationDate: string | null) {
@@ -51,64 +54,123 @@ const categoryColors: Record<string, string> = {
   Other: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
 }
 
-export function ItemCard({ item, onEdit, onDelete }: ItemCardProps) {
+export function ItemCard({ item, onEdit, onDelete, view = 'list' }: ItemCardProps) {
   const expStatus = getExpirationStatus(item.expiration_date)
-  
-  return (
-    <Card className="group relative overflow-hidden transition-all duration-200 hover:shadow-lg active:scale-[0.98]">
-      <CardContent className="p-0">
-        <div className="flex gap-4 p-4">
+
+  if (view === 'grid') {
+    return (
+      <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg active:scale-[0.98]">
+        <CardContent className="p-0">
           {/* Image */}
-          <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
+          <div className="relative aspect-square w-full overflow-hidden bg-muted">
             {item.image_url ? (
               <Image
                 src={item.image_url}
                 alt={item.name}
                 fill
                 className="object-cover"
-                sizes="80px"
+                sizes="(max-width: 640px) 50vw, 33vw"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
-                <Package className="h-8 w-8 text-muted-foreground/50" />
+                <Package className="h-10 w-10 text-muted-foreground/40" />
+              </div>
+            )}
+            {/* Expiry badge overlay */}
+            <div className="absolute left-2 top-2">
+              <Badge variant={expStatus.variant} className="text-xs shadow-sm">
+                {expStatus.label}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Info + actions */}
+          <div className="p-3">
+            <h3 className="truncate font-semibold text-sm leading-tight text-foreground">
+              {item.name}
+            </h3>
+            <div className="mt-1 flex items-center justify-between gap-1">
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium truncate ${categoryColors[item.category] || categoryColors.Other}`}>
+                {item.category}
+              </span>
+              <span className="text-xs text-muted-foreground shrink-0">×{item.quantity}</span>
+            </div>
+            {/* Action row — always visible */}
+            <div className="mt-2 flex gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 flex-1 gap-1 text-xs"
+                onClick={(e) => { e.stopPropagation(); onEdit(item) }}
+              >
+                <Pencil className="h-3 w-3" />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 flex-1 gap-1 text-xs text-destructive hover:text-destructive"
+                onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}
+              >
+                <Trash2 className="h-3 w-3" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // List view
+  return (
+    <Card className="overflow-hidden transition-all duration-200 hover:shadow-md active:scale-[0.99]">
+      <CardContent className="p-0">
+        <div className="flex gap-3 p-3">
+          {/* Image */}
+          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
+            {item.image_url ? (
+              <Image
+                src={item.image_url}
+                alt={item.name}
+                fill
+                className="object-cover"
+                sizes="64px"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <Package className="h-6 w-6 text-muted-foreground/50" />
               </div>
             )}
           </div>
-          
+
           {/* Content */}
-          <div className="flex flex-1 flex-col justify-between">
-            <div>
-              <h3 className="font-semibold leading-tight text-foreground line-clamp-1">
-                {item.name}
-              </h3>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${categoryColors[item.category] || categoryColors.Other}`}>
-                  {item.category}
-                </span>
-                <Badge variant={expStatus.variant} className="text-xs">
-                  {expStatus.label}
-                </Badge>
-              </div>
+          <div className="flex flex-1 flex-col justify-center min-w-0">
+            <h3 className="font-semibold text-sm leading-tight text-foreground truncate">
+              {item.name}
+            </h3>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${categoryColors[item.category] || categoryColors.Other}`}>
+                {item.category}
+              </span>
+              <Badge variant={expStatus.variant} className="text-xs">
+                {expStatus.label}
+              </Badge>
             </div>
-            
-            <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
+            <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
               <span>Qty: {item.quantity}</span>
-              {item.weight && (
-                <span>{item.weight} {item.weight_unit}</span>
-              )}
+              {item.weight && <span>{item.weight} {item.weight_unit}</span>}
             </div>
           </div>
-          
-          {/* Actions */}
-          <div className="flex flex-col gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+
+          {/* Actions — always visible, not hover-gated */}
+          <div className="flex flex-col justify-center gap-1 pl-1">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={(e) => {
-                e.stopPropagation()
-                onEdit(item)
-              }}
+              onClick={(e) => { e.stopPropagation(); onEdit(item) }}
+              aria-label="Edit item"
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -116,10 +178,8 @@ export function ItemCard({ item, onEdit, onDelete }: ItemCardProps) {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDelete(item.id)
-              }}
+              onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}
+              aria-label="Delete item"
             >
               <Trash2 className="h-4 w-4" />
             </Button>

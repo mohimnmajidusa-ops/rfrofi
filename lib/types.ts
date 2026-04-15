@@ -36,3 +36,10 @@ export type WeightUnit = typeof WEIGHT_UNITS[number]
 
 export type SortOption = 'name' | 'expiration' | 'category' | 'created'
 export type SortDirection = 'asc' | 'desc'
+
+export interface ItemTemplate {
+  id: string
+  name: string
+  image_url: string | null
+  created_at: string
+}
