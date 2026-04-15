@@ -18,15 +18,40 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json()
+
+  if (!body.name || typeof body.name !== 'string') {
+    return NextResponse.json({ error: 'name is required' }, { status: 400 })
+  }
+
   const supabase = await createClient()
 
-  // Upsert by name (case-insensitive) — update image_url if template already exists
+  // Try to update first; if nothing exists yet, insert.
+  const { data: existing } = await supabase
+    .from('item_templates')
+    .select('id')
+    .ilike('name', body.name.trim())
+    .maybeSingle()
+
+  if (existing) {
+    // Update image_url on the existing template
+    const { data, error } = await supabase
+      .from('item_templates')
+      .update({ image_url: body.image_url ?? null })
+      .eq('id', existing.id)
+      .select()
+      .single()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(data)
+  }
+
+  // Insert a new template
   const { data, error } = await supabase
     .from('item_templates')
-    .upsert(
-      { name: body.name, image_url: body.image_url ?? null },
-      { onConflict: 'name', ignoreDuplicates: false }
-    )
+    .insert({ name: body.name.trim(), image_url: body.image_url ?? null })
     .select()
     .single()
 
