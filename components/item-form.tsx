@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Item, ItemInput, CATEGORIES, WEIGHT_UNITS } from '@/lib/types'
+import { Item, ItemInput, ItemTemplate, CATEGORIES, WEIGHT_UNITS } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,10 +21,12 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CalendarIcon, ImageIcon, X } from 'lucide-react'
+import { CalendarIcon, ImageIcon, X, BookmarkPlus } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
+import { TemplateGallery } from './template-gallery'
+import { toast } from 'sonner'
 
 interface ItemFormProps {
   item?: Item | null
@@ -35,6 +37,7 @@ interface ItemFormProps {
 
 export function ItemForm({ item, open, onOpenChange, onSubmit }: ItemFormProps) {
   const [loading, setLoading] = useState(false)
+  const [savingTemplate, setSavingTemplate] = useState(false)
   const [name, setName] = useState('')
   const [category, setCategory] = useState<string>('Other')
   const [quantity, setQuantity] = useState(1)
@@ -62,6 +65,29 @@ export function ItemForm({ item, open, onOpenChange, onSubmit }: ItemFormProps) 
       setImageUrl('')
     }
   }, [item, open])
+
+  const handleSelectTemplate = (template: ItemTemplate) => {
+    setName(template.name)
+    setImageUrl(template.image_url || '')
+  }
+
+  const handleSaveAsTemplate = async () => {
+    if (!name.trim()) return
+    setSavingTemplate(true)
+    try {
+      const res = await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), image_url: imageUrl || null }),
+      })
+      if (!res.ok) throw new Error('Failed to save template')
+      toast.success('Saved as template')
+    } catch {
+      toast.error('Failed to save template')
+    } finally {
+      setSavingTemplate(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,6 +117,11 @@ export function ItemForm({ item, open, onOpenChange, onSubmit }: ItemFormProps) 
         </SheetHeader>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-6 overflow-y-auto pb-8">
+          {/* Template Gallery — only shown when adding a new item */}
+          {!item && (
+            <TemplateGallery onSelect={handleSelectTemplate} />
+          )}
+
           {/* Image Preview */}
           <div className="flex justify-center">
             <div className="relative h-32 w-32 overflow-hidden rounded-2xl bg-muted">
@@ -135,7 +166,27 @@ export function ItemForm({ item, open, onOpenChange, onSubmit }: ItemFormProps) 
           
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Name *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="name">Name *</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground',
+                  !name.trim() && 'invisible'
+                )}
+                onClick={handleSaveAsTemplate}
+                disabled={savingTemplate || !name.trim()}
+              >
+                {savingTemplate ? (
+                  <Spinner className="h-3 w-3" />
+                ) : (
+                  <BookmarkPlus className="h-3.5 w-3.5" />
+                )}
+                Save as template
+              </Button>
+            </div>
             <Input
               id="name"
               placeholder="e.g., Organic Milk"
