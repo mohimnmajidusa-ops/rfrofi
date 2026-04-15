@@ -262,12 +262,50 @@ export function AiChatView() {
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-lg px-4 py-4">
           {historyLoading ? (
-            <div className="space-y-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className={`flex ${i % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
-                  <Skeleton className={`h-16 rounded-2xl ${i % 2 === 0 ? 'w-72' : 'w-48'}`} />
+            <div className="flex flex-col items-center justify-center py-24 gap-6">
+              {/* Animated chef hat SVG */}
+              <div className="relative flex items-center justify-center">
+                {/* Outer pulse ring */}
+                <span className="absolute h-24 w-24 rounded-full bg-primary/10 animate-ping" style={{ animationDuration: '2s' }} />
+                <span className="absolute h-20 w-20 rounded-full bg-primary/15 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.3s' }} />
+                {/* Chef hat icon */}
+                <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                  <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
+                    {/* hat brim */}
+                    <rect x="14" y="44" width="36" height="7" rx="3" fill="currentColor" opacity="0.9"/>
+                    {/* hat body */}
+                    <path d="M20 44 C20 44 16 38 16 30 C16 22 22 17 28 17 C28 17 26 12 32 12 C38 12 36 17 36 17 C42 17 48 22 48 30 C48 38 44 44 44 44 Z" fill="currentColor" opacity="0.85"/>
+                    {/* steam wisps */}
+                    <path d="M26 9 C26 9 24 7 26 5 C28 3 26 1 26 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.5" className="origin-bottom">
+                      <animateTransform attributeName="transform" type="translate" values="0,0; 0,-3; 0,0" dur="1.6s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.5;0.1;0.5" dur="1.6s" repeatCount="indefinite" />
+                    </path>
+                    <path d="M32 8 C32 8 30 6 32 4 C34 2 32 0 32 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.5">
+                      <animateTransform attributeName="transform" type="translate" values="0,0; 0,-4; 0,0" dur="1.6s" begin="0.3s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.5;0.1;0.5" dur="1.6s" begin="0.3s" repeatCount="indefinite" />
+                    </path>
+                    <path d="M38 9 C38 9 36 7 38 5 C40 3 38 1 38 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.5">
+                      <animateTransform attributeName="transform" type="translate" values="0,0; 0,-3; 0,0" dur="1.6s" begin="0.6s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.5;0.1;0.5" dur="1.6s" begin="0.6s" repeatCount="indefinite" />
+                    </path>
+                  </svg>
                 </div>
-              ))}
+              </div>
+              {/* Text */}
+              <div className="text-center space-y-1">
+                <p className="text-sm font-medium text-foreground">AI Chef is warming up</p>
+                <p className="text-xs text-muted-foreground">Loading your kitchen...</p>
+              </div>
+              {/* Animated dots */}
+              <div className="flex items-center gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="h-1.5 w-1.5 rounded-full bg-primary/50 animate-bounce"
+                    style={{ animationDelay: `${i * 150}ms` }}
+                  />
+                ))}
+              </div>
             </div>
           ) : !hasMessages && !streamingMessage ? (
             /* Empty state */
