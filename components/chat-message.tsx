@@ -8,6 +8,87 @@ interface ChatMessageProps {
   isStreaming?: boolean
 }
 
+// Detect a markdown table row: | col | col |
+function isTableRow(line: string) {
+  return line.trim().startsWith('|') && line.trim().endsWith('|')
+}
+
+// Parse a markdown table row into cells
+function parseTableRow(line: string): string[] {
+  return line
+    .trim()
+    .slice(1, -1)           // strip leading/trailing |
+    .split('|')
+    .map((cell) => cell.trim())
+}
+
+// Check if a row is a separator (|---|---|)
+function isSeparatorRow(cells: string[]) {
+  return cells.every((c) => /^:?-+:?$/.test(c))
+}
+
+function renderTable(headers: string[], rows: string[][], key: string) {
+  return (
+    <div key={key} className="my-3 w-full">
+      {/* Desktop: scrollable table */}
+      <div className="hidden sm:block overflow-x-auto rounded-xl border border-border">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="bg-muted/60 border-b border-border">
+              {headers.map((h, i) => (
+                <th
+                  key={i}
+                  className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap"
+                >
+                  {renderInline(h)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, ri) => (
+              <tr
+                key={ri}
+                className={cn(
+                  'border-b border-border last:border-0 transition-colors',
+                  ri % 2 === 0 ? 'bg-background' : 'bg-muted/20'
+                )}
+              >
+                {row.map((cell, ci) => (
+                  <td key={ci} className="px-4 py-2.5 text-sm text-foreground">
+                    {renderInline(cell)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile: stacked cards */}
+      <div className="flex flex-col gap-2 sm:hidden">
+        {rows.map((row, ri) => (
+          <div
+            key={ri}
+            className="rounded-xl border border-border bg-card px-4 py-3 space-y-2"
+          >
+            {headers.map((header, ci) => (
+              <div key={ci} className="flex items-start justify-between gap-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground shrink-0">
+                  {header}
+                </span>
+                <span className="text-sm text-foreground text-right">
+                  {renderInline(row[ci] ?? '')}
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function formatContent(content: string) {
   const lines = content.split('\n')
   const elements: React.ReactNode[] = []
@@ -19,6 +100,25 @@ function formatContent(content: string) {
     // Empty line
     if (line.trim() === '') {
       i++
+      continue
+    }
+
+    // Markdown table detection
+    if (isTableRow(line)) {
+      const tableLines: string[] = []
+      while (i < lines.length && isTableRow(lines[i])) {
+        tableLines.push(lines[i])
+        i++
+      }
+
+      const parsed = tableLines.map(parseTableRow)
+      // Filter out separator rows
+      const [headerRow, ...rest] = parsed
+      const dataRows = rest.filter((r) => !isSeparatorRow(r))
+
+      if (headerRow && dataRows.length > 0) {
+        elements.push(renderTable(headerRow, dataRows, `table-${i}`))
+      }
       continue
     }
 
