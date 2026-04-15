@@ -4,7 +4,7 @@ import { useState } from 'react'
 import useSWR from 'swr'
 import { ItemTemplate } from '@/lib/types'
 import { Button } from '@/components/ui/button'
-import { Package, X } from 'lucide-react'
+import { Package, Search, X } from 'lucide-react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -21,6 +21,7 @@ export function TemplateGallery({ onSelect }: TemplateGalleryProps) {
     fetcher
   )
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
@@ -53,13 +54,34 @@ export function TemplateGallery({ onSelect }: TemplateGalleryProps) {
     return null
   }
 
+  const filtered = search.trim()
+    ? templates.filter((t) =>
+        t.name.toLowerCase().includes(search.trim().toLowerCase())
+      )
+    : templates
+
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        Quick select from templates
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap">
+          Quick select from templates
+        </p>
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search..."
+            className="h-6 w-32 rounded-md border border-input bg-background pl-6 pr-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        </div>
+      </div>
       <div className="flex gap-3 overflow-x-auto pb-1">
-        {templates.map((template) => (
+        {filtered.length === 0 && (
+          <p className="text-xs text-muted-foreground py-2">No templates match &quot;{search}&quot;</p>
+        )}
+        {filtered.map((template) => (
           <button
             key={template.id}
             type="button"
