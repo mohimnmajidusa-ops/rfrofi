@@ -7,8 +7,9 @@ import { ItemCard, ViewMode } from './item-card'
 import { ItemForm } from './item-form'
 import { FilterBar } from './filter-bar'
 import { Button } from '@/components/ui/button'
-import { Plus, Package, LayoutGrid, List } from 'lucide-react'
+import { Plus, Package, LayoutGrid, List, ChefHat } from 'lucide-react'
 import { ThemeToggle } from './theme-toggle'
+import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import {
@@ -125,6 +126,18 @@ export function InventoryView() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* AI Chef link */}
+            <Link href="/ai">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 px-3 text-xs font-medium"
+                aria-label="Open AI Chef"
+              >
+                <ChefHat className="h-3.5 w-3.5" />
+                AI Chef
+              </Button>
+            </Link>
             {/* View toggle */}
             <div className="flex items-center rounded-lg border border-border bg-muted p-0.5">
               <Button
